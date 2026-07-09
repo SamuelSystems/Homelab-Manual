@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homelab Manual — La guida per il tuo server casalingo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F6F3;
+  --panel:#FFFFFF;
+  --panel-2:#E9F0EB;
+  --ink:#17251F;
+  --muted:#5C6B63;
+  --line:#D8E2DB;
+  --accent:#0E9F6E;
+  --accent-soft:#DDF3EA;
+  --amber:#D97E00;
+  --amber-soft:#FCEFD8;
+  --red:#D14343;
+  --term-bg:#0F1713;
+  --term-ink:#D9EFE3;
+  --term-line:#203028;
+  --shadow:0 1px 2px rgba(23,37,31,.05),0 8px 24px rgba(23,37,31,.06);
+  --radius:14px;
+}
+html[data-theme="dark"]{
+  --bg:#0D1310;
+  --panel:#141C17;
+  --panel-2:#1A241E;
+  --ink:#E6F0EA;
+  --muted:#93A69B;
+  --line:#243029;
+  --accent:#2DD48F;
+  --accent-soft:#123527;
+  --amber:#F0A63C;
+  --amber-soft:#33260F;
+  --term-bg:#0A100D;
+  --term-ink:#D9EFE3;
+  --term-line:#1D2A23;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+body{
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  line-height:1.65;
+  font-size:16px;
+}
+::selection{background:var(--accent);color:#fff}
+
+/* ---------- Layout ---------- */
+.layout{display:grid;grid-template-columns:300px 1fr;min-height:100vh}
+main{min-width:0;padding:0 clamp(20px,5vw,72px) 96px;max-width:980px}
+
+/* ---------- Sidebar : the rack ---------- */
+.rack{
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+  background:var(--panel);
+  border-right:1px solid var(--line);
+  padding:28px 20px 32px;
+  display:flex;flex-direction:column;gap:6px;
+}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:10px;text-decoration:none;color:var(--ink)}
+.brand-box{
+  width:42px;height:42px;border-radius:10px;flex:0 0 auto;
+  background:var(--term-bg);border:1px solid var(--term-line);
+  display:grid;place-items:center;position:relative;
+}
+.brand-box svg{width:22px;height:22px;stroke:var(--accent)}
+.brand h1{font-family:"Space Grotesk",sans-serif;font-size:1.15rem;font-weight:700;letter-spacing:-.01em;line-height:1.15}
+.brand small{display:block;font-family:"JetBrains Mono",monospace;font-size:.62rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:400}
+.rack-label{
+  font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin:18px 6px 6px;
+}
+.rack nav{display:flex;flex-direction:column;gap:4px}
+.unit{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px;border-radius:10px;
+  border:1px solid transparent;
+  text-decoration:none;color:var(--ink);
+  font-size:.9rem;font-weight:500;
+  transition:background .15s,border-color .15s;
+}
+.unit:hover{background:var(--panel-2)}
+.unit .led{
+  width:8px;height:8px;border-radius:50%;flex:0 0 auto;
+  background:var(--line);
+  transition:background .2s,box-shadow .2s;
+}
+.unit .u-num{
+  font-family:"JetBrains Mono",monospace;font-size:.68rem;color:var(--muted);
+  width:22px;flex:0 0 auto;
+}
+.unit.active{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,transparent)}
+.unit.active .led{background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent);animation:blink 2.4s infinite}
+@keyframes blink{0%,92%,100%{opacity:1}96%{opacity:.35}}
+.rack-foot{margin-top:auto;padding-top:20px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.theme-btn{
+  display:flex;align-items:center;gap:8px;
+  font:inherit;font-size:.8rem;font-weight:500;color:var(--muted);
+  background:var(--panel-2);border:1px solid var(--line);border-radius:99px;
+  padding:7px 14px;cursor:pointer;
+}
+.theme-btn:hover{color:var(--ink)}
+.uptime{font-family:"JetBrains Mono",monospace;font-size:.62rem;color:var(--muted)}
+
+/* ---------- Mobile top bar ---------- */
+.topbar{display:none}
+
+/* ---------- Hero ---------- */
+.hero{padding:64px 0 22px}
+.hero .eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);background:var(--accent-soft);
+  border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  padding:6px 12px;border-radius:99px;margin-bottom:20px;
+}
+.hero .eyebrow .led{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 2.4s infinite}
+.hero h2{
+  font-family:"Space Grotesk",sans-serif;
+  font-size:clamp(2rem,5vw,3.1rem);font-weight:700;letter-spacing:-.03em;line-height:1.08;
+  max-width:16ch;
+}
+.hero h2 .mono-accent{color:var(--accent)}
+.hero p{max-width:56ch;color:var(--muted);margin-top:18px;font-size:1.05rem}
+.hero-stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+.chip{
+  font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--muted);
+  border:1px solid var(--line);background:var(--panel);
+  padding:7px 13px;border-radius:99px;
+}
+
+/* ---------- Sections ---------- */
+section.chapter{padding-top:56px;margin-top:24px}
+.ch-head{display:flex;align-items:baseline;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:8px}
+.ch-head .u-tag{
+  font-family:"JetBrains Mono",monospace;font-size:.78rem;font-weight:700;
+  color:var(--accent);background:var(--term-bg);border-radius:8px;padding:5px 10px;
+  letter-spacing:.06em;flex:0 0 auto;
+}
+.ch-head h3{font-family:"Space Grotesk",sans-serif;font-size:clamp(1.4rem,3vw,1.9rem);font-weight:700;letter-spacing:-.02em}
+.ch-sub{color:var(--muted);margin-bottom:8px;max-width:64ch}
+h4{
+  font-family:"Space Grotesk",sans-serif;font-size:1.18rem;font-weight:700;letter-spacing:-.01em;
+  margin:44px 0 12px;display:flex;align-items:center;gap:10px;
+}
+h4::before{content:"";width:14px;height:3px;border-radius:2px;background:var(--accent);flex:0 0 auto}
+h5{font-size:1rem;font-weight:600;margin:26px 0 8px}
+p{margin:10px 0;max-width:72ch}
+p.note{color:var(--muted);font-size:.92rem}
+ul,ol{margin:10px 0 10px 22px;max-width:70ch}
+li{margin:5px 0}
+strong{font-weight:600}
+a.inline{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+code.k{
+  font-family:"JetBrains Mono",monospace;font-size:.85em;
+  background:var(--panel-2);border:1px solid var(--line);
+  padding:1px 6px;border-radius:6px;white-space:nowrap;
+}
+
+/* ---------- Terminal / code blocks ---------- */
+.term{
+  background:var(--term-bg);border:1px solid var(--term-line);border-radius:var(--radius);
+  margin:16px 0;box-shadow:var(--shadow);overflow:hidden;
+}
+.term-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 14px;border-bottom:1px solid var(--term-line);
+}
+.term-bar .t-title{font-family:"JetBrains Mono",monospace;font-size:.68rem;color:#7FA391;letter-spacing:.06em}
+.copy-btn{
+  font-family:"JetBrains Mono",monospace;font-size:.65rem;letter-spacing:.05em;
+  color:#7FA391;background:transparent;border:1px solid var(--term-line);
+  border-radius:7px;padding:4px 10px;cursor:pointer;transition:color .15s,border-color .15s;
+}
+.copy-btn:hover{color:var(--term-ink);border-color:#3A4F44}
+.copy-btn.ok{color:#2DD48F;border-color:#2DD48F}
+.term pre{
+  padding:16px 18px;overflow-x:auto;
+  font-family:"JetBrains Mono",monospace;font-size:.83rem;line-height:1.7;color:var(--term-ink);
+}
+.term .c{color:#6E8A7C}      /* commenti */
+.term .p{color:#2DD48F}      /* prompt $ */
+.term .s{color:#F0C674}      /* stringhe/valori */
+.term .key{color:#7FB4E8}    /* chiavi yaml */
+
+/* ---------- Callouts ---------- */
+.callout{
+  display:flex;gap:14px;align-items:flex-start;
+  border-radius:var(--radius);padding:16px 18px;margin:18px 0;
+  border:1px solid;font-size:.94rem;
+}
+.callout .ic{flex:0 0 auto;margin-top:2px;font-size:1rem}
+.callout.tip{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.callout.warn{background:var(--amber-soft);border-color:color-mix(in srgb,var(--amber) 35%,transparent)}
+.callout p{margin:0;max-width:none}
+
+/* ---------- Tables ---------- */
+.tbl-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th{
+  text-align:left;font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel-2);white-space:nowrap;
+}
+td{padding:11px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td code{font-family:"JetBrains Mono",monospace;font-size:.82em;background:var(--panel-2);border:1px solid var(--line);padding:1px 6px;border-radius:6px;white-space:nowrap}
+
+/* ---------- Cards (steps / servizi) ---------- */
+.grid{display:grid;gap:14px;margin:18px 0}
+.grid.two{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px;box-shadow:var(--shadow);
+}
+.card h6{font-family:"Space Grotesk",sans-serif;font-size:1rem;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.card p{font-size:.9rem;color:var(--muted);margin:0;max-width:none}
+.card .port{
+  font-family:"JetBrains Mono",monospace;font-size:.68rem;color:var(--accent);
+  background:var(--accent-soft);border-radius:6px;padding:2px 8px;margin-left:auto;flex:0 0 auto;
+}
+.svc-cat{
+  font-family:"JetBrains Mono",monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin:30px 0 10px;display:flex;align-items:center;gap:10px;
+}
+.svc-cat::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* ---------- Diagramma porte ---------- */
+.port-diagram{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:24px;margin:18px 0;box-shadow:var(--shadow);overflow-x:auto;
+}
+.port-flow{display:flex;align-items:center;gap:0;min-width:560px;justify-content:center}
+.pf-node{
+  text-align:center;padding:14px 18px;border-radius:12px;border:1px solid var(--line);
+  background:var(--panel-2);min-width:130px;
+}
+.pf-node.dock{background:var(--term-bg);border-color:var(--term-line);color:var(--term-ink)}
+.pf-node b{display:block;font-family:"Space Grotesk",sans-serif;font-size:.9rem}
+.pf-node span{font-family:"JetBrains Mono",monospace;font-size:.68rem;color:var(--muted)}
+.pf-node.dock span{color:#7FA391}
+.pf-arrow{
+  flex:0 0 auto;padding:0 8px;text-align:center;
+  font-family:"JetBrains Mono",monospace;font-size:.68rem;color:var(--accent);white-space:nowrap;
+}
+.pf-arrow::after{content:"";display:block;width:64px;height:2px;background:var(--accent);margin-top:4px;border-radius:2px}
+
+/* ---------- Footer ---------- */
+footer{
+  margin-top:80px;padding-top:28px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:.85rem;
+  display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
+}
+footer .mono{font-family:"JetBrains Mono",monospace;font-size:.7rem}
+
+/* ---------- Focus ---------- */
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* ---------- Responsive ---------- */
+@media (max-width:960px){
+  .layout{grid-template-columns:1fr}
+  .rack{
+    position:fixed;inset:0 auto 0 0;width:min(320px,85vw);z-index:60;
+    transform:translateX(-105%);transition:transform .25s ease;
+    box-shadow:0 0 60px rgba(0,0,0,.25);
+  }
+  .rack.open{transform:translateX(0)}
+  .topbar{
+    display:flex;position:sticky;top:0;z-index:50;
+    align-items:center;gap:14px;
+    background:color-mix(in srgb,var(--bg) 88%,transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+    padding:12px 20px;
+  }
+  .topbar .menu-btn{
+    display:grid;place-items:center;width:40px;height:40px;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;cursor:pointer;color:var(--ink);
+  }
+  .topbar strong{font-family:"Space Grotesk",sans-serif;font-size:1rem}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:55;opacity:0;pointer-events:none;transition:opacity .2s}
+  .scrim.show{opacity:1;pointer-events:auto}
+  main{padding:0 20px 80px}
+  .hero{padding-top:36px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="rack" id="rack">
+  <a class="brand" href="#top">
+    <span class="brand-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/>
+        <circle cx="7" cy="7.5" r="0.6" fill="currentColor"/><circle cx="7" cy="16.5" r="0.6" fill="currentColor"/>
+        <line x1="13" y1="7.5" x2="18" y2="7.5"/><line x1="13" y1="16.5" x2="18" y2="16.5"/>
+      </svg>
+    </span>
+    <h1>Homelab Manual<small>self-hosted · v1.0</small></h1>
+  </a>
+
+  <div class="rack-label">// Rack — capitoli</div>
+  <nav id="nav">
+    <a class="unit" href="#installazione"><span class="led"></span><span class="u-num">U1</span>Installare Ubuntu Server</a>
+    <a class="unit" href="#comandi"><span class="led"></span><span class="u-num">U2</span>Comandi essenziali</a>
+    <a class="unit" href="#networking"><span class="led"></span><span class="u-num">U3</span>Networking, DNS &amp; VPN</a>
+    <a class="unit" href="#docker"><span class="led"></span><span class="u-num">U4</span>Docker &amp; Compose</a>
+    <a class="unit" href="#servizi"><span class="led"></span><span class="u-num">U5</span>Servizi consigliati</a>
+  </nav>
+
+  <div class="rack-foot">
+    <button class="theme-btn" id="themeBtn" aria-label="Cambia tema">
+      <span id="themeIcon">🌙</span><span id="themeLabel">Dark</span>
+    </button>
+  </div>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<main id="top">
+  <div class="topbar">
+    <button class="menu-btn" id="menuBtn" aria-label="Apri menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+    </button>
+    <strong>Homelab Manual</strong>
+  </div>
+
+  <div class="hero">
+    <span class="eyebrow"><span class="led"></span> sistema operativo · rete · container</span>
+    <h2>Il manuale del tuo <span class="mono-accent">homelab</span>, dal primo boot ai container.</h2>
+    <p>Una guida pratica in cinque capitoli per costruire un server casalingo con Ubuntu Server: installazione e dischi, comandi da terminale, rete e accesso remoto sicuro, Docker Compose spiegato bene e una selezione dei servizi self-hosted più utili.</p>
+    <div class="hero-stats">
+      <span class="chip">ubuntu server 24.04 LTS</span>
+      <span class="chip">docker + compose v2</span>
+      <span class="chip">wireguard · tailscale · cloudflared</span>
+      <span class="chip">100% terminale-friendly</span>
+    </div>
+  </div>
+
+<!-- ============================================================
+     U1 — INSTALLAZIONE
+============================================================ -->
+<section class="chapter" id="installazione">
+  <div class="ch-head"><span class="u-tag">U1</span><h3>Installare Ubuntu Server e gestire l'archiviazione</h3></div>
+  <p class="ch-sub">Dalla chiavetta USB al primo login SSH, con una panoramica su partizioni, dischi aggiuntivi e mount permanenti.</p>
+
+  <h4>Cosa ti serve</h4>
+  <ul>
+    <li>Un PC, mini-PC o vecchio portatile con almeno <strong>2 GB di RAM</strong> e <strong>25 GB di disco</strong> (di più è meglio).</li>
+    <li>Una chiavetta USB da almeno 4 GB.</li>
+    <li>La ISO di <strong>Ubuntu Server LTS</strong> (scaricala da <a class="inline" href="https://ubuntu.com/download/server" target="_blank" rel="noopener">ubuntu.com/download/server</a>). Scegli sempre la versione LTS: riceve aggiornamenti per 5 anni.</li>
+    <li>Un cavo Ethernet: per un server, il Wi-Fi è da evitare quando possibile.</li>
+  </ul>
+
+  <h4>Passo 1 — Crea la chiavetta USB avviabile</h4>
+  <p>Il modo più semplice è usare <strong>Balena Etcher</strong> o <strong>Rufus</strong> (Windows): selezioni la ISO, selezioni la chiavetta, avvii. Da Linux/macOS puoi usare direttamente <code class="k">dd</code>:</p>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">terminale — creazione USB</span><button class="copy-btn">copia</button></div>
+    <pre><span class="c"># ATTENZIONE: /dev/sdX è la tua chiavetta, verifica con lsblk!</span>
+<span class="p">$</span> sudo dd if=ubuntu-24.04-live-server-amd64.iso of=/dev/sdX bs=4M status=progress
+<span class="p">$</span> sync</pre>
+  </div>
+
+  <h4>Passo 2 — Avvia l'installer</h4>
+  <ol>
+    <li>Inserisci la chiavetta nel futuro server e accendilo premendo il tasto per il <strong>boot menu</strong> (di solito F12, F11, ESC o F2 a seconda del produttore).</li>
+    <li>Seleziona la chiavetta USB e avvia <em>"Try or Install Ubuntu Server"</em>.</li>
+    <li>Scegli lingua e layout tastiera (Italiano).</li>
+    <li>Alla schermata di rete, se il cavo Ethernet è collegato riceverai automaticamente un IP via DHCP. Prendi nota di questo IP.</li>
+  </ol>
+
+  <h4>Passo 3 — Configura i dischi (la parte importante)</h4>
+  <p>L'installer propone <em>"Use an entire disk"</em>: per iniziare va benissimo. Ti verrà chiesto se usare <strong>LVM</strong> (Logical Volume Manager): lascialo <strong>attivo</strong>. LVM ti permette in futuro di ridimensionare le partizioni o aggiungere dischi senza reinstallare.</p>
+  <div class="callout warn"><span class="ic">⚠️</span><p><strong>Occhio al default di LVM:</strong> Ubuntu di serie usa solo una parte del disco per il volume root. Dopo l'installazione, se vuoi usare il 100% dello spazio, esegui i due comandi qui sotto.</p></div>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">espandere il volume LVM al 100%</span><button class="copy-btn">copia</button></div>
+    <pre><span class="p">$</span> sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+<span class="p">$</span> sudo resize2fs /dev/ubuntu-vg/ubuntu-lv</pre>
+  </div>
+
+  <h4>Passo 4 — Utente, SSH e fine installazione</h4>
+  <ol>
+    <li>Crea il tuo utente e scegli il <strong>nome del server</strong> (hostname), es. <code class="k">homelab</code>.</li>
+    <li>Alla schermata SSH, spunta <strong>"Install OpenSSH server"</strong>: è fondamentale, ti permetterà di gestire il server da remoto.</li>
+    <li>Salta la selezione degli snap (Docker lo installeremo meglio a mano nel capitolo U4).</li>
+    <li>A fine installazione rimuovi la chiavetta e riavvia. Da un altro PC ora puoi collegarti così:</li>
+  </ol>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">primo accesso da remoto</span><button class="copy-btn">copia</button></div>
+    <pre><span class="p">$</span> ssh tuoutente@192.168.1.50   <span class="c"># usa l'IP annotato prima</span></pre>
+  </div>
+  <div class="callout tip"><span class="ic">💡</span><p>D'ora in poi il server può vivere senza monitor né tastiera ("headless"): farai tutto via SSH dal tuo computer principale.</p></div>
+
+  <h4>Gestire l'archiviazione: concetti chiave</h4>
+  <p>In Linux i dischi non sono lettere (C:, D:) ma <strong>dispositivi</strong> in <code class="k">/dev</code> che vengono <strong>montati</strong> su cartelle. I nomi tipici:</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>Dispositivo</th><th>Cosa è</th></tr>
+    <tr><td><code>/dev/sda</code>, <code>/dev/sdb</code></td><td>Dischi SATA/USB (il primo, il secondo…)</td></tr>
+    <tr><td><code>/dev/sda1</code>, <code>/dev/sda2</code></td><td>Le partizioni del disco <code>sda</code></td></tr>
+    <tr><td><code>/dev/nvme0n1</code></td><td>SSD NVMe (le partizioni sono <code>nvme0n1p1</code>…)</td></tr>
+  </table></div>
+
+  <h5>Vedere dischi e spazio</h5>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">diagnostica dischi</span><button class="copy-btn">copia</button></div>
+    <pre><span class="p">$</span> lsblk                 <span class="c"># albero di dischi, partizioni e punti di mount</span>
+<span class="p">$</span> df -h                 <span class="c"># spazio usato/libero per ogni filesystem</span>
+<span class="p">$</span> sudo du -sh /var/*    <span class="c"># chi occupa spazio dentro una cartella</span>
+<span class="p">$</span> sudo fdisk -l         <span class="c"># dettagli completi sui dischi</span></pre>
+  </div>
+
+  <h5>Aggiungere un nuovo disco (es. per i media)</h5>
+  <p>Scenario tipico: colleghi un disco nuovo che appare come <code class="k">/dev/sdb</code> e vuoi usarlo per film, backup o dati dei container.</p>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">formattare e montare un disco nuovo</span><button class="copy-btn">copia</button></div>
+    <pre><span class="c"># 1. Crea una partizione (interattivo: g = tabella GPT, n = nuova, w = scrivi)</span>
+<span class="p">$</span> sudo fdisk /dev/sdb
+
+<span class="c"># 2. Formatta la partizione in ext4</span>
+<span class="p">$</span> sudo mkfs.ext4 /dev/sdb1
+
+<span class="c"># 3. Crea il punto di mount e monta</span>
+<span class="p">$</span> sudo mkdir -p /mnt/dati
+<span class="p">$</span> sudo mount /dev/sdb1 /mnt/dati
+
+<span class="c"># 4. Dai i permessi al tuo utente</span>
+<span class="p">$</span> sudo chown -R $USER:$USER /mnt/dati</pre>
+  </div>
+
+  <h5>Montaggio automatico all'avvio: /etc/fstab</h5>
+  <p>Il mount fatto a mano sparisce al riavvio. Per renderlo permanente si aggiunge una riga a <code class="k">/etc/fstab</code>, usando l'<strong>UUID</strong> del disco (che non cambia mai, a differenza di <code class="k">/dev/sdb</code>):</p>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">mount permanente con fstab</span><button class="copy-btn">copia</button></div>
+    <pre><span class="c"># 1. Trova l'UUID della partizione</span>
+<span class="p">$</span> sudo blkid /dev/sdb1
+<span class="c">#   → UUID="a1b2c3d4-...."  TYPE="ext4"</span>
+
+<span class="c"># 2. Aggiungi la riga a /etc/fstab</span>
+<span class="p">$</span> sudo nano /etc/fstab
+<span class="s">UUID=a1b2c3d4-....  /mnt/dati  ext4  defaults,nofail  0  2</span>
+
+<span class="c"># 3. Testa SENZA riavviare (se non dà errori, sei a posto)</span>
+<span class="p">$</span> sudo mount -a
+<span class="p">$</span> sudo systemctl daemon-reload</pre>
+  </div>
+  <div class="callout warn"><span class="ic">⚠️</span><p>Un errore in <code class="k">fstab</code> può bloccare l'avvio del server. Usa sempre l'opzione <strong><code class="k">nofail</code></strong> sui dischi dati e testa con <code class="k">sudo mount -a</code> prima di riavviare.</p></div>
+
+  <h5>E se voglio RAID o snapshot?</h5>
+  <p>Quando avrai più dischi e dati importanti, valuta filesystem più avanzati: <strong>ZFS</strong> (integrità dei dati, snapshot, RAID-Z) o <strong>mergerfs + SnapRAID</strong> (popolare per i media server perché unisce dischi di dimensioni diverse). Per iniziare, ext4 + un backup esterno è più che sufficiente.</p>
+</section>
+
+<!-- ============================================================
+     U2 — COMANDI
+============================================================ -->
+<section class="chapter" id="comandi">
+  <div class="ch-head"><span class="u-tag">U2</span><h3>Comandi essenziali per gestire il server</h3></div>
+  <p class="ch-sub">Il vocabolario minimo del terminale per sopravvivere (e divertirsi) in un homelab. Non serve impararli a memoria: torna qui quando ti servono.</p>
+
+  <h4>Muoversi e gestire file</h4>
+  <div class="tbl-wrap"><table>
+    <tr><th>Comando</th><th>Cosa fa</th></tr>
+    <tr><td><code>pwd</code></td><td>Mostra la cartella in cui ti trovi</td></tr>
+    <tr><td><code>ls -lah</code></td><td>Elenca file con dettagli, nascosti e dimensioni leggibili</td></tr>
+    <tr><td><code>cd /percorso</code></td><td>Cambia cartella (<code>cd ..</code> torna indietro, <code>cd ~</code> va alla home)</td></tr>
+    <tr><td><code>mkdir -p a/b/c</code></td><td>Crea cartelle, anche annidate</td></tr>
+    <tr><td><code>cp -r origine dest</code></td><td>Copia file o cartelle</td></tr>
+    <tr><td><code>mv origine dest</code></td><td>Sposta o rinomina</td></tr>
+    <tr><td><code>rm file</code> / <code>rm -rf cartella</code></td><td>Elimina (con <code>-rf</code> non c'è cestino: massima attenzione)</td></tr>
+    <tr><td><code>nano file</code></td><td>Editor semplice: Ctrl+O salva, Ctrl+X esce</td></tr>
+    <tr><td><code>cat file</code> / <code>less file</code></td><td>Mostra un file (con <code>less</code> puoi scorrere, esci con <code>q</code>)</td></tr>
+    <tr><td><code>grep -r "testo" .</code></td><td>Cerca un testo dentro i file</td></tr>
+    <tr><td><code>find / -name "*.conf"</code></td><td>Cerca file per nome</td></tr>
+  </table></div>
+
+  <h4>Aggiornamenti e pacchetti (apt)</h4>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">gestione pacchetti</span><button class="copy-btn">copia</button></div>
+    <pre><span class="p">$</span> sudo apt update                <span class="c"># aggiorna la lista dei pacchetti</span>
+<span class="p">$</span> sudo apt upgrade -y            <span class="c"># installa gli aggiornamenti</span>
+<span class="p">$</span> sudo apt install htop curl git <span class="c"># installa programmi</span>
+<span class="p">$</span> sudo apt remove pacchetto      <span class="c"># rimuove un programma</span>
+<span class="p">$</span> sudo apt autoremove            <span class="c"># pulisce le dipendenze inutili</span>
+<span class="p">$</span> sudo reboot                    <span class="c"># riavvia (dopo aggiornamenti del kernel)</span></pre>
+  </div>
+  <div class="callout tip"><span class="ic">💡</span><p>Abitudine sana: <code class="k">sudo apt update && sudo apt upgrade -y</code> una volta a settimana. Per gli aggiornamenti di sicurezza automatici: <code class="k">sudo apt install unattended-upgrades</code>.</p></div>
+
+  <h4>Servizi: systemctl</h4>
+  <p>Quasi tutto ciò che gira sul server (SSH, Docker, ecc.) è un <strong>servizio</strong> gestito da systemd:</p>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">gestione servizi</span><button class="copy-btn">copia</button></div>
+    <pre><span class="p">$</span> systemctl status docker        <span class="c"># stato di un servizio</span>
+<span class="p">$</span> sudo systemctl restart docker  <span class="c"># riavvia</span>
+<span class="p">$</span> sudo systemctl stop docker     <span class="c"># ferma</span>
+<span class="p">$</span> sudo systemctl enable docker   <span class="c"># avvio automatico al boot</span>
+<span class="p">$</span> sudo systemctl disable docker  <span class="c"># disattiva avvio automatico</span>
+<span class="p">$</span> journalctl -u docker -f        <span class="c"># log del servizio in tempo reale</span></pre>
+  </div>
+
+  <h4>Monitoraggio: cosa sta succedendo?</h4>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">salute del sistema</span><button class="copy-btn">copia</button></div>
+    <pre><span class="p">$</span> htop            <span class="c"># CPU, RAM e processi (versione bella di top)</span>
+<span class="p">$</span> free -h         <span class="c"># memoria RAM</span>
+<span class="p">$</span> df -h           <span class="c"># spazio su disco</span>
+<span class="p">$</span> uptime          <span class="c"># da quanto è acceso + carico medio</span>
+<span class="p">$</span> ip a            <span class="c"># indirizzi IP delle interfacce</span>
+<span class="p">$</span> ss -tulpn       <span class="c"># quali porte sono in ascolto e da chi</span>
+<span class="p">$</span> ping 1.1.1.1    <span class="c"># il server raggiunge internet?</span></pre>
+  </div>
+
+  <h4>Utenti e permessi in 60 secondi</h4>
+  <p>Ogni file ha un proprietario, un gruppo e tre livelli di permesso: lettura (r), scrittura (w), esecuzione (x). I casi pratici:</p>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">permessi</span><button class="copy-btn">copia</button></div>
+    <pre><span class="p">$</span> sudo chown -R mario:mario /mnt/dati  <span class="c"># cambia proprietario</span>
+<span class="p">$</span> chmod +x script.sh                   <span class="c"># rende eseguibile uno script</span>
+<span class="p">$</span> chmod 600 chiave.pem                 <span class="c"># leggibile solo dal proprietario</span>
+<span class="p">$</span> sudo usermod -aG docker $USER        <span class="c"># aggiunge il tuo utente al gruppo docker</span></pre>
+  </div>
+
+  <h4>SSH come un pro</h4>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">accesso con chiavi (dal tuo PC, non dal server)</span><button class="copy-btn">copia</button></div>
+    <pre><span class="c"># 1. Genera una coppia di chiavi sul TUO computer</span>
+<span class="p">$</span> ssh-keygen -t ed25519
+
+<span class="c"># 2. Copia la chiave pubblica sul server</span>
+<span class="p">$</span> ssh-copy-id tuoutente@192.168.1.50
+
+<span class="c"># 3. Da ora entri senza password. Puoi anche creare un alias:</span>
+<span class="p">$</span> nano ~/.ssh/config
+<span class="s">Host homelab
+    HostName 192.168.1.50
+    User tuoutente</span>
+
+<span class="c"># ...e collegarti semplicemente con:</span>
+<span class="p">$</span> ssh homelab</pre>
+  </div>
+  <div class="callout tip"><span class="ic">💡</span><p>Una volta che l'accesso con chiave funziona, disattiva il login con password: in <code class="k">/etc/ssh/sshd_config</code> imposta <code class="k">PasswordAuthentication no</code>, poi <code class="k">sudo systemctl restart ssh</code>. È il singolo miglioramento di sicurezza più efficace.</p></div>
+
+  <h4>Firewall: ufw</h4>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">firewall in 5 comandi</span><button class="copy-btn">copia</button></div>
+    <pre><span class="p">$</span> sudo ufw allow ssh          <span class="c"># PRIMA di attivarlo, o ti chiudi fuori!</span>
+<span class="p">$</span> sudo ufw allow 80,443/tcp   <span class="c"># web (se ti serve)</span>
+<span class="p">$</span> sudo ufw enable             <span class="c"># attiva il firewall</span>
+<span class="p">$</span> sudo ufw status numbered    <span class="c"># regole attive</span>
+<span class="p">$</span> sudo ufw delete 3           <span class="c"># elimina la regola n. 3</span></pre>
+  </div>
+
+  <h4>Bonus: piccoli trucchi che cambiano la vita</h4>
+  <ul>
+    <li><code class="k">Tab</code> completa automaticamente comandi e percorsi. <code class="k">↑</code> richiama i comandi precedenti.</li>
+    <li><code class="k">Ctrl+R</code> cerca nella cronologia dei comandi.</li>
+    <li><code class="k">comando | grep parola</code> filtra l'output di qualsiasi comando.</li>
+    <li><code class="k">tmux</code>: sessioni di terminale che sopravvivono alla disconnessione SSH (<code class="k">sudo apt install tmux</code>).</li>
+    <li><code class="k">history</code> mostra tutti i comandi che hai eseguito.</li>
+  </ul>
+</section>
+
+<!-- ============================================================
+     U3 — NETWORKING
+============================================================ -->
+<section class="chapter" id="networking">
+  <div class="ch-head"><span class="u-tag">U3</span><h3>Networking, DNS, tunnel e VPN</h3></div>
+  <p class="ch-sub">Come dare al server un indirizzo stabile, dare nomi ai servizi e raggiungere il tuo homelab da fuori casa senza aprire falle di sicurezza.</p>
+
+  <h4>Le basi: come parla la tua rete</h4>
+  <ul>
+    <li><strong>IP privato</strong> (es. <code class="k">192.168.1.50</code>): l'indirizzo del server dentro casa, assegnato dal router.</li>
+    <li><strong>IP pubblico</strong>: l'indirizzo con cui casa tua si presenta a internet. Spesso cambia (IP dinamico) e con molti operatori è dietro <strong>CGNAT</strong> (condiviso, non raggiungibile da fuori).</li>
+    <li><strong>Porte</strong>: i "canali" di un IP. Un servizio = una porta: SSH è la 22, HTTP la 80, HTTPS la 443.</li>
+    <li><strong>DNS</strong>: la rubrica che traduce nomi (<code class="k">jellyfin.casa.lan</code>) in indirizzi IP.</li>
+  </ul>
+
+  <h4>Passo 1 — IP statico per il server</h4>
+  <p>Il server deve avere sempre lo stesso IP. La via più semplice: nel pannello del router cerca <strong>"DHCP static lease"</strong> (o "prenotazione IP") e associa il MAC address del server a un IP fisso. In alternativa puoi configurarlo sul server con Netplan:</p>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">/etc/netplan/50-cloud-init.yaml — IP statico</span><button class="copy-btn">copia</button></div>
+    <pre><span class="key">network:</span>
+  <span class="key">version:</span> <span class="s">2</span>
+  <span class="key">ethernets:</span>
+    <span class="key">eth0:</span>                        <span class="c"># il nome lo vedi con: ip a</span>
+      <span class="key">dhcp4:</span> <span class="s">false</span>
+      <span class="key">addresses:</span> [<span class="s">192.168.1.50/24</span>]
+      <span class="key">routes:</span>
+        - <span class="key">to:</span> <span class="s">default</span>
+          <span class="key">via:</span> <span class="s">192.168.1.1</span>       <span class="c"># il tuo router</span>
+      <span class="key">nameservers:</span>
+        <span class="key">addresses:</span> [<span class="s">1.1.1.1</span>, <span class="s">9.9.9.9</span>]</pre>
+  </div>
+  <p class="note">Applica con <code class="k">sudo netplan apply</code>. Se l'editor rompe l'indentazione, ricorda: YAML vuole spazi, mai tab.</p>
+
+  <h4>Passo 2 — DNS locale: dai un nome ai tuoi servizi</h4>
+  <p>Scrivere <code class="k">192.168.1.50:8096</code> stanca subito. Le opzioni, in ordine di impegno:</p>
+  <div class="grid two">
+    <div class="card"><h6>File hosts</h6><p>Su ogni PC aggiungi a <code>/etc/hosts</code> (o <code>C:\Windows\System32\drivers\etc\hosts</code>) righe tipo <code>192.168.1.50 homelab.lan</code>. Semplice ma va fatto su ogni dispositivo.</p></div>
+    <div class="card"><h6>Pi-hole / AdGuard Home</h6><p>Un DNS per tutta la rete: blocca la pubblicità e ti fa definire record locali (<code>jellyfin.lan → 192.168.1.50</code>) per tutti i dispositivi in un colpo solo. La scelta consigliata.</p></div>
+  </div>
+  <div class="callout tip"><span class="ic">💡</span><p>Con Pi-hole installato, imposta il suo IP come <strong>server DNS nel DHCP del router</strong>: ogni dispositivo di casa lo userà automaticamente.</p></div>
+
+  <h4>Passo 3 — Accedere da fuori casa</h4>
+  <p>Tre strade, dalla più sicura/semplice alla più "tradizionale":</p>
+
+  <h5>Opzione A — VPN mesh: Tailscale (consigliata per iniziare)</h5>
+  <p>Tailscale crea una rete privata tra i tuoi dispositivi usando WireGuard. Funziona anche dietro CGNAT, senza aprire porte sul router:</p>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">tailscale in 2 comandi</span><button class="copy-btn">copia</button></div>
+    <pre><span class="p">$</span> curl -fsSL https://tailscale.com/install.sh | sh
+<span class="p">$</span> sudo tailscale up
+<span class="c"># apri il link che compare, accedi, fine.</span>
+<span class="c"># Installa l'app Tailscale sul telefono/PC: vedrai il server</span>
+<span class="c"># con un IP tipo 100.x.y.z raggiungibile ovunque.</span></pre>
+  </div>
+
+  <h5>Opzione B — VPN self-hosted: WireGuard</h5>
+  <p>Come Tailscale ma tutto in casa tua: veloce, moderno, ma richiede una <strong>porta aperta sul router</strong> (UDP 51820) e un IP pubblico raggiungibile. Il modo più comodo di gestirlo è il container <strong>wg-easy</strong>, che ha un'interfaccia web e genera i QR code per i client (lo trovi nel capitolo U5).</p>
+
+  <h5>Opzione C — Tunnel: Cloudflare Tunnel</h5>
+  <p>Perfetto per esporre <strong>siti/servizi web pubblici</strong> (es. il tuo blog o Nextcloud) senza aprire nessuna porta: il container <code class="k">cloudflared</code> apre una connessione in uscita verso Cloudflare, che fa da ponte con il tuo dominio. Funziona anche dietro CGNAT e ti dà HTTPS gratis.</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>Soluzione</th><th>Porte da aprire</th><th>Funziona con CGNAT</th><th>Ideale per</th></tr>
+    <tr><td><strong>Tailscale</strong></td><td>Nessuna</td><td>Sì</td><td>Accesso personale a tutto il lab</td></tr>
+    <tr><td><strong>WireGuard</strong></td><td>UDP 51820</td><td>No</td><td>VPN 100% self-hosted</td></tr>
+    <tr><td><strong>Cloudflare Tunnel</strong></td><td>Nessuna</td><td>Sì</td><td>Servizi web pubblici con dominio</td></tr>
+    <tr><td><strong>Port forwarding + reverse proxy</strong></td><td>TCP 80/443</td><td>No</td><td>Chi vuole controllo totale</td></tr>
+  </table></div>
+  <div class="callout warn"><span class="ic">⚠️</span><p><strong>Regola d'oro:</strong> non esporre mai direttamente su internet SSH, Portainer, o pannelli di amministrazione. Se un servizio non deve essere pubblico, raggiungilo via VPN.</p></div>
+
+  <h4>DNS dinamico (DDNS)</h4>
+  <p>Se il tuo IP pubblico cambia ma vuoi comunque raggiungerlo per WireGuard o port forwarding, un client DDNS aggiorna automaticamente un nome a dominio (es. <code class="k">casamia.duckdns.org</code>) con il tuo IP attuale. Servizi gratuiti: <strong>DuckDNS</strong>, <strong>Dynu</strong>, oppure l'API di Cloudflare se hai un dominio tuo. Molti router hanno il client DDNS integrato.</p>
+
+  <h4>Reverse proxy: un solo ingresso, tanti servizi</h4>
+  <p>Invece di ricordare dieci porte diverse, un <strong>reverse proxy</strong> (Nginx Proxy Manager, Caddy, Traefik) ascolta sulle porte 80/443 e smista in base al nome: <code class="k">jellyfin.tuodominio.it</code> → porta 8096, <code class="k">cloud.tuodominio.it</code> → porta 11000, tutto con certificati HTTPS automatici via Let's Encrypt. Lo trovi tra i servizi del capitolo U5.</p>
+
+  <h4>Comandi utili per diagnosticare la rete</h4>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">toolbox di rete</span><button class="copy-btn">copia</button></div>
+    <pre><span class="p">$</span> ip a                          <span class="c"># i tuoi IP</span>
+<span class="p">$</span> ping 192.168.1.1              <span class="c"># raggiungo il router?</span>
+<span class="p">$</span> nslookup jellyfin.lan         <span class="c"># il DNS risolve il nome?</span>
+<span class="p">$</span> dig google.com @1.1.1.1       <span class="c"># interroga un DNS specifico</span>
+<span class="p">$</span> ss -tulpn                     <span class="c"># porte in ascolto sul server</span>
+<span class="p">$</span> curl -I http://localhost:8096 <span class="c"># il servizio risponde in locale?</span>
+<span class="p">$</span> traceroute 8.8.8.8            <span class="c"># percorso verso internet</span>
+<span class="p">$</span> curl ifconfig.me              <span class="c"># il tuo IP pubblico</span></pre>
+  </div>
+</section>
+
+<!-- ============================================================
+     U4 — DOCKER
+============================================================ -->
+<section class="chapter" id="docker">
+  <div class="ch-head"><span class="u-tag">U4</span><h3>Docker &amp; Docker Compose spiegati bene</h3></div>
+  <p class="ch-sub">I container sono il cuore di un homelab moderno: ogni servizio vive isolato, si installa in un minuto e si aggiorna con due comandi. Qui trovi la struttura di un compose file spiegata riga per riga.</p>
+
+  <h4>Installare Docker (metodo ufficiale)</h4>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">installazione docker + compose</span><button class="copy-btn">copia</button></div>
+    <pre><span class="c"># Script ufficiale di installazione</span>
+<span class="p">$</span> curl -fsSL https://get.docker.com | sudo sh
+
+<span class="c"># Usa docker senza sudo (poi esci e rientra dalla sessione SSH)</span>
+<span class="p">$</span> sudo usermod -aG docker $USER
+
+<span class="c"># Verifica</span>
+<span class="p">$</span> docker --version
+<span class="p">$</span> docker compose version
+<span class="p">$</span> docker run hello-world</pre>
+  </div>
+
+  <h4>Concetti in 30 secondi</h4>
+  <ul>
+    <li><strong>Immagine</strong>: il "pacchetto" pronto di un'applicazione (es. <code class="k">jellyfin/jellyfin</code>), scaricato da un registry come Docker Hub.</li>
+    <li><strong>Container</strong>: un'istanza in esecuzione di un'immagine. Usa e getta: si può distruggere e ricreare senza perdere nulla, <em>se i dati sono nei volumi</em>.</li>
+    <li><strong>Volume</strong>: il ponte tra una cartella del server e una cartella dentro il container. È qui che vivono i dati persistenti.</li>
+    <li><strong>Compose</strong>: un file YAML (<code class="k">compose.yaml</code>) che descrive uno o più container. Invece di lunghi comandi <code class="k">docker run</code>, scrivi la configurazione una volta e la avvii con <code class="k">docker compose up -d</code>.</li>
+  </ul>
+
+  <h4>Anatomia di un compose file</h4>
+  <p>Questo esempio contiene tutti i blocchi che incontrerai nel 95% dei casi. Leggilo insieme alla spiegazione sotto:</p>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">compose.yaml — esempio completo e commentato</span><button class="copy-btn">copia</button></div>
+    <pre><span class="key">services:</span>                          <span class="c"># elenco dei container di questo stack</span>
+
+  <span class="key">jellyfin:</span>                        <span class="c"># nome del servizio (lo scegli tu)</span>
+    <span class="key">image:</span> <span class="s">jellyfin/jellyfin:latest</span>  <span class="c"># immagine:tag da Docker Hub</span>
+    <span class="key">container_name:</span> <span class="s">jellyfin</span>       <span class="c"># nome fisso del container (opzionale)</span>
+    <span class="key">restart:</span> <span class="s">unless-stopped</span>        <span class="c"># riparte da solo dopo crash o riavvii</span>
+
+    <span class="key">ports:</span>                         <span class="c"># ESTERNA:INTERNA</span>
+      - <span class="s">"8096:8096"</span>                 <span class="c"># porta 8096 del server → 8096 del container</span>
+
+    <span class="key">volumes:</span>                       <span class="c"># SERVER:CONTAINER</span>
+      - <span class="s">./config:/config</span>            <span class="c"># configurazione (accanto al compose file)</span>
+      - <span class="s">/mnt/dati/media:/media:ro</span>   <span class="c"># i tuoi film, in sola lettura (:ro)</span>
+
+    <span class="key">environment:</span>                   <span class="c"># variabili di configurazione</span>
+      - <span class="s">TZ=Europe/Rome</span>
+      - <span class="s">PUID=1000</span>                   <span class="c"># il tuo utente (vedi: id)</span>
+      - <span class="s">PGID=1000</span>
+
+    <span class="key">networks:</span>
+      - <span class="s">lab</span>
+
+<span class="key">networks:</span>
+  <span class="key">lab:</span>                             <span class="c"># rete interna condivisa dallo stack</span></pre>
+  </div>
+
+  <h4>Porte: interna vs esterna</h4>
+  <p>La riga <code class="k">"8096:8096"</code> è la fonte di confusione numero uno, quindi vediamola con un disegno:</p>
+  <div class="port-diagram">
+    <div class="port-flow">
+      <div class="pf-node"><b>Il tuo browser</b><span>192.168.1.50:8096</span></div>
+      <div class="pf-arrow">porta ESTERNA<br>(host)</div>
+      <div class="pf-node"><b>Server Ubuntu</b><span>ascolta su :8096</span></div>
+      <div class="pf-arrow">mappata su<br>porta INTERNA</div>
+      <div class="pf-node dock"><b>Container</b><span>app in ascolto su :8096</span></div>
+    </div>
+  </div>
+  <ul>
+    <li><strong>Porta esterna (sinistra)</strong>: la porta sul <em>server</em>, quella che digiti nel browser. La scegli tu e deve essere <strong>unica</strong>: due container non possono usare la stessa.</li>
+    <li><strong>Porta interna (destra)</strong>: la porta su cui l'app ascolta <em>dentro</em> il container. È decisa dall'immagine e <strong>non si tocca</strong> (la trovi nella documentazione dell'immagine).</li>
+    <li>Conflitto di porta? Cambia solo quella esterna: <code class="k">"8097:8096"</code> → raggiungi il servizio su <code class="k">:8097</code>, ma dentro al container nulla cambia.</li>
+    <li>Un container <strong>senza</strong> <code class="k">ports:</code> non è raggiungibile dall'esterno, ma gli altri container della stessa rete lo vedono comunque (utile per i database).</li>
+    <li><code class="k">"127.0.0.1:8096:8096"</code> espone la porta solo in locale sul server: perfetto se davanti c'è un reverse proxy.</li>
+  </ul>
+
+  <h4>Volumi: dove vivono i dati</h4>
+  <p>Anche qui il formato è <code class="k">sinistra:destra</code> = <code class="k">server:container</code>. Due stili:</p>
+  <div class="grid two">
+    <div class="card"><h6>Bind mount (consigliato)</h6><p><code>./config:/config</code> — una cartella reale del server. Sai esattamente dove sono i dati, fai backup con un semplice copia-incolla. Lo standard de facto negli homelab.</p></div>
+    <div class="card"><h6>Volume gestito</h6><p><code>dbdata:/var/lib/postgresql/data</code> — Docker gestisce la cartella per te (in <code>/var/lib/docker/volumes</code>). Va dichiarato nella sezione <code>volumes:</code> di primo livello. Comodo per i database.</p></div>
+  </div>
+  <ul>
+    <li>La regola pratica: <strong>se distruggi il container, i dati nei volumi restano</strong>. Tutto ciò che non è in un volume sparisce.</li>
+    <li><code class="k">:ro</code> alla fine = read-only. Usalo per dati che il container deve solo leggere (es. la libreria media).</li>
+    <li>Organizzazione consigliata: una cartella per stack, es. <code class="k">~/docker/jellyfin/compose.yaml</code> con accanto le sue cartelle di configurazione.</li>
+  </ul>
+
+  <h4>Le altre chiavi che incontrerai</h4>
+  <div class="tbl-wrap"><table>
+    <tr><th>Chiave</th><th>A cosa serve</th></tr>
+    <tr><td><code>restart: unless-stopped</code></td><td>Il container riparte dopo crash e riavvii del server, a meno che tu non l'abbia fermato a mano. Mettila sempre.</td></tr>
+    <tr><td><code>environment:</code></td><td>Configurazione via variabili: fuso orario (<code>TZ</code>), password, utente. <code>PUID</code>/<code>PGID</code> (immagini LinuxServer) fanno girare l'app col tuo utente, evitando problemi di permessi sui volumi.</td></tr>
+    <tr><td><code>env_file: .env</code></td><td>Carica le variabili da un file <code>.env</code>: tieni le password fuori dal compose file.</td></tr>
+    <tr><td><code>depends_on:</code></td><td>Ordine di avvio: l'app parte dopo il suo database.</td></tr>
+    <tr><td><code>networks:</code></td><td>Reti interne. Container sulla stessa rete si parlano usando il nome del servizio come hostname (es. <code>db:5432</code>).</td></tr>
+    <tr><td><code>volumes:</code> (primo livello)</td><td>Dichiara i volumi gestiti da Docker usati dai servizi.</td></tr>
+    <tr><td><code>healthcheck:</code></td><td>Un comando che verifica se il servizio è davvero vivo.</td></tr>
+    <tr><td><code>labels:</code></td><td>Metadati letti da altri strumenti (Traefik, Watchtower…).</td></tr>
+  </table></div>
+
+  <h4>I comandi compose da conoscere</h4>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">ciclo di vita di uno stack</span><button class="copy-btn">copia</button></div>
+    <pre><span class="c"># (dalla cartella che contiene compose.yaml)</span>
+<span class="p">$</span> docker compose up -d          <span class="c"># avvia in background</span>
+<span class="p">$</span> docker compose ps             <span class="c"># stato dei container dello stack</span>
+<span class="p">$</span> docker compose logs -f        <span class="c"># log in tempo reale (Ctrl+C per uscire)</span>
+<span class="p">$</span> docker compose restart        <span class="c"># riavvia</span>
+<span class="p">$</span> docker compose down           <span class="c"># ferma e rimuove i container (i volumi restano)</span>
+
+<span class="c"># Aggiornare un servizio:</span>
+<span class="p">$</span> docker compose pull
+<span class="p">$</span> docker compose up -d
+
+<span class="c"># Comandi docker generali:</span>
+<span class="p">$</span> docker ps                     <span class="c"># tutti i container attivi</span>
+<span class="p">$</span> docker exec -it jellyfin bash <span class="c"># entra dentro un container</span>
+<span class="p">$</span> docker stats                  <span class="c"># consumo CPU/RAM per container</span>
+<span class="p">$</span> docker system prune           <span class="c"># pulizia immagini/container inutilizzati</span></pre>
+  </div>
+
+  <h4>Esempio reale: app + database</h4>
+  <p>Uno stack a due servizi (Nextcloud + MariaDB) mostra come i container si parlano tra loro senza esporre il database:</p>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">compose.yaml — nextcloud + mariadb</span><button class="copy-btn">copia</button></div>
+    <pre><span class="key">services:</span>
+  <span class="key">nextcloud:</span>
+    <span class="key">image:</span> <span class="s">nextcloud:latest</span>
+    <span class="key">restart:</span> <span class="s">unless-stopped</span>
+    <span class="key">ports:</span>
+      - <span class="s">"8080:80"</span>              <span class="c"># esterna 8080 → interna 80</span>
+    <span class="key">volumes:</span>
+      - <span class="s">./nextcloud:/var/www/html</span>
+    <span class="key">environment:</span>
+      - <span class="s">MYSQL_HOST=db</span>           <span class="c"># "db" = nome del servizio qui sotto!</span>
+      - <span class="s">MYSQL_DATABASE=nextcloud</span>
+      - <span class="s">MYSQL_USER=nextcloud</span>
+      - <span class="s">MYSQL_PASSWORD=${DB_PASSWORD}</span>  <span class="c"># letta dal file .env</span>
+    <span class="key">depends_on:</span>
+      - <span class="s">db</span>
+
+  <span class="key">db:</span>
+    <span class="key">image:</span> <span class="s">mariadb:11</span>
+    <span class="key">restart:</span> <span class="s">unless-stopped</span>   <span class="c"># nessuna porta esposta: solo interno</span>
+    <span class="key">volumes:</span>
+      - <span class="s">./db:/var/lib/mysql</span>
+    <span class="key">environment:</span>
+      - <span class="s">MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}</span>
+      - <span class="s">MYSQL_DATABASE=nextcloud</span>
+      - <span class="s">MYSQL_USER=nextcloud</span>
+      - <span class="s">MYSQL_PASSWORD=${DB_PASSWORD}</span></pre>
+  </div>
+  <div class="callout tip"><span class="ic">💡</span><p>Accanto al compose file crea un file <code class="k">.env</code> con <code class="k">DB_PASSWORD=...</code> e <code class="k">DB_ROOT_PASSWORD=...</code>. Compose lo legge in automatico e le password non finiscono nel file principale.</p></div>
+</section>
+
+<!-- ============================================================
+     U5 — SERVIZI
+============================================================ -->
+<section class="chapter" id="servizi">
+  <div class="ch-head"><span class="u-tag">U5</span><h3>I servizi Docker più utili per un homelab</h3></div>
+  <p class="ch-sub">Una selezione collaudata, divisa per categoria. Accanto a ogni servizio trovi la porta web di default: la esterna la scegli tu nel compose file.</p>
+
+  <div class="svc-cat">Gestione &amp; monitoraggio</div>
+  <div class="grid two">
+    <div class="card"><h6>Portainer <span class="port">:9443</span></h6><p>Interfaccia web per gestire container, stack, immagini e volumi. Il primo servizio da installare: vedi tutto il tuo Docker a colpo d'occhio.</p></div>
+    <div class="card"><h6>Dockge <span class="port">:5001</span></h6><p>Alternativa leggera a Portainer, pensata proprio per i compose file: li modifichi dall'interfaccia e li versioni facilmente.</p></div>
+    <div class="card"><h6>Uptime Kuma <span class="port">:3001</span></h6><p>Monitoraggio "è vivo?" per tutti i tuoi servizi, con notifiche su Telegram, email, Discord quando qualcosa va giù.</p></div>
+    <div class="card"><h6>Watchtower <span class="port">—</span></h6><p>Aggiorna automaticamente i container quando esce una nuova immagine. Comodo, ma usalo con criterio sui servizi critici.</p></div>
+    <div class="card"><h6>Homepage / Homarr <span class="port">:3000</span></h6><p>Dashboard di partenza del tuo lab: tutti i servizi in una pagina, con stato e statistiche. La "home" del tuo homelab.</p></div>
+    <div class="card"><h6>Beszel <span class="port">:8090</span></h6><p>Monitoraggio leggero di CPU, RAM, disco e rete per uno o più server, con grafici storici e avvisi.</p></div>
+  </div>
+
+  <div class="svc-cat">Rete &amp; sicurezza</div>
+  <div class="grid two">
+    <div class="card"><h6>Pi-hole <span class="port">:80</span></h6><p>DNS per tutta la rete: blocca pubblicità e tracker su ogni dispositivo e gestisce i tuoi record DNS locali.</p></div>
+    <div class="card"><h6>AdGuard Home <span class="port">:3000</span></h6><p>Alternativa a Pi-hole con interfaccia moderna e supporto nativo a DNS-over-HTTPS.</p></div>
+    <div class="card"><h6>Nginx Proxy Manager <span class="port">:81</span></h6><p>Reverse proxy con interfaccia web: domini, certificati HTTPS automatici e liste di accesso in pochi click.</p></div>
+    <div class="card"><h6>wg-easy <span class="port">:51821</span></h6><p>WireGuard con pannello web: crei un client VPN e generi il QR code per il telefono in dieci secondi.</p></div>
+    <div class="card"><h6>cloudflared <span class="port">—</span></h6><p>Il client di Cloudflare Tunnel: esponi servizi web sul tuo dominio senza aprire porte sul router.</p></div>
+    <div class="card"><h6>Vaultwarden <span class="port">:80</span></h6><p>Server di password compatibile con le app Bitwarden. Le tue password, a casa tua.</p></div>
+  </div>
+
+  <div class="svc-cat">Media &amp; download</div>
+  <div class="grid two">
+    <div class="card"><h6>Jellyfin <span class="port">:8096</span></h6><p>Il tuo Netflix personale, completamente gratuito e open source: film, serie, musica con app per TV e telefono.</p></div>
+    <div class="card"><h6>Immich <span class="port">:2283</span></h6><p>Sostituto self-hosted di Google Foto: backup automatico dal telefono, ricerca intelligente, riconoscimento volti.</p></div>
+    <div class="card"><h6>Navidrome <span class="port">:4533</span></h6><p>Server musicale leggero compatibile con le app Subsonic: la tua libreria musicale in streaming ovunque.</p></div>
+    <div class="card"><h6>qBittorrent <span class="port">:8080</span></h6><p>Client torrent con interfaccia web, il compagno classico di ogni media server.</p></div>
+    <div class="card"><h6>*arr suite <span class="port">:8989 / :7878</span></h6><p>Sonarr (serie), Radarr (film), Prowlarr (indexer): automazione completa della libreria media.</p></div>
+    <div class="card"><h6>Audiobookshelf <span class="port">:80</span></h6><p>Server per audiolibri e podcast con app mobile e sincronizzazione della posizione di ascolto.</p></div>
+  </div>
+
+  <div class="svc-cat">Cloud personale &amp; produttività</div>
+  <div class="grid two">
+    <div class="card"><h6>Nextcloud <span class="port">:80</span></h6><p>La suite cloud completa: file, calendario, contatti, note e collaborazione. Il sostituto di Google Drive.</p></div>
+    <div class="card"><h6>Syncthing <span class="port">:8384</span></h6><p>Sincronizzazione di cartelle tra dispositivi, peer-to-peer e senza cloud: semplice e a prova di bomba.</p></div>
+    <div class="card"><h6>Paperless-ngx <span class="port">:8000</span></h6><p>Archivio documenti con OCR: scansioni bollette e contratti, e li ritrovi cercando il testo.</p></div>
+    <div class="card"><h6>FreshRSS <span class="port">:80</span></h6><p>Lettore RSS self-hosted: le tue fonti di notizie senza algoritmi di mezzo.</p></div>
+    <div class="card"><h6>Gitea <span class="port">:3000</span></h6><p>Il tuo GitHub personale, leggerissimo: repository, issue e CI per i tuoi progetti.</p></div>
+    <div class="card"><h6>Stirling-PDF <span class="port">:8080</span></h6><p>Coltellino svizzero per i PDF via web: unisci, dividi, comprimi, firma, OCR. Tutto in locale.</p></div>
+  </div>
+
+  <div class="svc-cat">Domotica &amp; backup</div>
+  <div class="grid two">
+    <div class="card"><h6>Home Assistant <span class="port">:8123</span></h6><p>La piattaforma di domotica open source: integra migliaia di dispositivi e automatizza tutta la casa.</p></div>
+    <div class="card"><h6>Duplicati / Restic <span class="port">:8200</span></h6><p>Backup cifrati e pianificati verso disco esterno o cloud. Un homelab senza backup è solo un incidente rimandato.</p></div>
+  </div>
+
+  <h4>Esempio pronto: il primo stack</h4>
+  <p>Per partire subito, ecco Portainer + Uptime Kuma. Salva come <code class="k">~/docker/base/compose.yaml</code> e lancia <code class="k">docker compose up -d</code>:</p>
+  <div class="term">
+    <div class="term-bar"><span class="t-title">compose.yaml — stack di partenza</span><button class="copy-btn">copia</button></div>
+    <pre><span class="key">services:</span>
+  <span class="key">portainer:</span>
+    <span class="key">image:</span> <span class="s">portainer/portainer-ce:latest</span>
+    <span class="key">container_name:</span> <span class="s">portainer</span>
+    <span class="key">restart:</span> <span class="s">unless-stopped</span>
+    <span class="key">ports:</span>
+      - <span class="s">"9443:9443"</span>
+    <span class="key">volumes:</span>
+      - <span class="s">/var/run/docker.sock:/var/run/docker.sock</span>
+      - <span class="s">./portainer:/data</span>
+
+  <span class="key">uptime-kuma:</span>
+    <span class="key">image:</span> <span class="s">louislam/uptime-kuma:1</span>
+    <span class="key">container_name:</span> <span class="s">uptime-kuma</span>
+    <span class="key">restart:</span> <span class="s">unless-stopped</span>
+    <span class="key">ports:</span>
+      - <span class="s">"3001:3001"</span>
+    <span class="key">volumes:</span>
+      - <span class="s">./uptime-kuma:/app/data</span></pre>
+  </div>
+  <div class="callout tip"><span class="ic">💡</span><p>Poi apri <code class="k">https://192.168.1.50:9443</code> per Portainer e <code class="k">http://192.168.1.50:3001</code> per Uptime Kuma. Benvenuto nel tuo homelab. 🎉</p></div>
+
+  <footer>
+    <span>Homelab Manual — costruito per imparare, rompere e ricostruire.</span>
+    <span class="mono">status: <span style="color:var(--accent)">● online</span></span>
+  </footer>
+</section>
+
+</main>
+</div>
+<div class="scrim" id="scrim"></div>
+
+<script>
+// ---------- Tema ----------
+const root = document.documentElement;
+const themeBtn = document.getElementById('themeBtn');
+const themeIcon = document.getElementById('themeIcon');
+const themeLabel = document.getElementById('themeLabel');
+let theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+applyTheme(theme);
+themeBtn.addEventListener('click', () => { theme = theme === 'dark' ? 'light' : 'dark'; applyTheme(theme); });
+function applyTheme(t){
+  root.setAttribute('data-theme', t);
+  themeIcon.textContent = t === 'dark' ? '☀️' : '🌙';
+  themeLabel.textContent = t === 'dark' ? 'Light' : 'Dark';
+}
+
+// ---------- Menu mobile ----------
+const rack = document.getElementById('rack');
+const scrim = document.getElementById('scrim');
+const menuBtn = document.getElementById('menuBtn');
+if (menuBtn){
+  menuBtn.addEventListener('click', () => { rack.classList.add('open'); scrim.classList.add('show'); });
+  scrim.addEventListener('click', closeMenu);
+  rack.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
+}
+function closeMenu(){ rack.classList.remove('open'); scrim.classList.remove('show'); }
+
+// ---------- Evidenzia capitolo attivo (LED) ----------
+const links = [...document.querySelectorAll('.unit')];
+const sections = links.map(l => document.querySelector(l.getAttribute('href')));
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting){
+      links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id));
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => s && io.observe(s));
+
+// ---------- Bottoni "copia" ----------
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const pre = btn.closest('.term').querySelector('pre');
+    // Copia solo i comandi, senza il simbolo del prompt
+    const text = pre.innerText.split('\n')
+      .map(l => l.replace(/^\$\s?/, ''))
+      .join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = 'copiato ✓'; btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'copia'; btn.classList.remove('ok'); }, 1600);
+    } catch(e){
+      btn.textContent = 'errore';
+      setTimeout(() => { btn.textContent = 'copia'; }, 1600);
+    }
+  });
+});
+
+</script>
+</body>
+</html>
